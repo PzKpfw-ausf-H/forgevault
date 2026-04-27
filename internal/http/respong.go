@@ -33,3 +33,23 @@ func writeError(w http.ResponseWriter, status int, code, message, field string) 
 		},
 	})
 }
+
+func badRequest(w http.ResponseWriter, code, msg, field string) {
+	writeError(w, http.StatusBadRequest, code, msg, field)
+}
+
+func validationError(w http.ResponseWriter, code, msg, field string) {
+	writeError(w, http.StatusBadRequest, code, msg, field)
+}
+
+func notFound(w http.ResponseWriter, code, msg, field string) {
+	writeError(w, http.StatusNotFound, code, msg, field)
+}
+
+func conflict(w http.ResponseWriter, code, msg, field string) {
+	writeError(w, http.StatusConflict, code, msg, field)
+}
+
+func internalError(w http.ResponseWriter, code, msg, field string) {
+	writeError(w, http.StatusInternalServerError, code, msg, field)
+}
