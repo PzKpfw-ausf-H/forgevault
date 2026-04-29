@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
-	apihttp "github.com/PzKpfw-ausf-H/forgevault/internal/http"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
 	"github.com/google/uuid"
 )
@@ -22,7 +21,7 @@ func NewAssetService(repo repo.AssetsRepo) *AssetService {
 	}
 }
 
-func (s *AssetService) Create(ctx context.Context, input apihttp.CreateAssetRequest) (domain.Asset, error) {
+func (s *AssetService) Create(ctx context.Context, input CreateAssetRequest) (domain.Asset, error) {
 	asset := domain.Asset{
 		ID:          domain.AssetID(uuid.New().String()),
 		Title:       input.Title,
@@ -59,7 +58,7 @@ func (s *AssetService) List(ctx context.Context, filter repo.AssetFilter) ([]dom
 	return assets, nil
 }
 
-func (s *AssetService) Patch(ctx context.Context, id domain.AssetID, patch apihttp.PatchAssetRequest) (domain.Asset, error) {
+func (s *AssetService) Patch(ctx context.Context, id domain.AssetID, patch PatchAssetRequest) (domain.Asset, error) {
 	assetToUpdate, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return domain.Asset{}, err

@@ -6,4 +6,5 @@ const (
 	ErrCodeNotFound   = "not_found"
 	ErrCodeConflict   = "conflict"
 	ErrCodeInternal   = "internal"
+	ErrCodeBadRequest = "bad_request"
 )
