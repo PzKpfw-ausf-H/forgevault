@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -32,7 +33,7 @@ func main() {
 
 	go func() {
 		log.Println("Starting server on 8080...")
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("server listen and serve: %v", err)
 		}
 	}()
