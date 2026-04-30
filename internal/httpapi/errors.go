@@ -1,4 +1,4 @@
-package http
+package httpapi
 
 const (
 	ErrInvalidJSON    = "invalid_json"

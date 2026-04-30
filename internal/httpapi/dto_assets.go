@@ -1,4 +1,4 @@
-package http
+package httpapi
 
 import (
 	"time"
@@ -7,28 +7,28 @@ import (
 )
 
 type CreateAssetRequest struct {
-	Title       string
-	Description string
-	Type        domain.AssetType
-	Tags        []string
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Type        domain.AssetType `json:"type"`
+	Tags        []string         `json:"tags"`
 }
 
 type PatchAssetRequest struct {
-	Title       *string
-	Description *string
-	Type        *domain.Asset
-	Tags        *[]string
+	Title       *string           `json:"title"`
+	Description *string           `json:"description"`
+	Type        *domain.AssetType `json:"type"`
+	Tags        *[]string         `json:"tags"`
 }
 
 type AssetResponse struct {
-	ID          domain.AssetID
-	Title       string
-	Description string
-	Type        domain.AssetType
-	Tags        []string
-	AuthorID    domain.UserID
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          domain.AssetID   `json:"id"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	Type        domain.AssetType `json:"type"`
+	Tags        []string         `json:"tags"`
+	AuthorID    domain.UserID    `json:"authorId"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	UpdatedAt   time.Time        `json:"updatedAt"`
 }
 
 func toAssetResponse(a domain.Asset) AssetResponse {

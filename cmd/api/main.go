@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/httpapi"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/repo/memory"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/service"
 )
 
 type healthResp struct {
@@ -19,22 +19,20 @@ type healthResp struct {
 }
 
 func main() {
-	r := chi.NewRouter()
+	memrepo := memory.NewMemRepo()
+	svc := service.NewAssetService(memrepo)
+	h := httpapi.NewAssetsHandler(svc)
+
+	router := httpapi.NewRouter(h)
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: r,
+		Handler: router,
 	}
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(healthResp{Status: "ok"})
-	})
-
 	go func() {
-		log.Println("Starting server on :8080")
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Println("Starting server on 8080...")
+		if err := srv.ListenAndServe(); err != nil {
 			log.Fatalf("server listen and serve: %v", err)
 		}
 	}()
@@ -47,9 +45,9 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	log.Println("Shutting down...")
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("error shutting down: %v", err)
+	}
 
-	_ = srv.Shutdown(shutdownCtx)
-
-	log.Println("Shutdown complete")
+	log.Println("Server shut down")
 }

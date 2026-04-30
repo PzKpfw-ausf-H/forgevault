@@ -15,10 +15,10 @@ type AssetsRepo interface {
 }
 
 type AssetFilter struct {
-	Type     *domain.AssetType
-	Tag      *string
-	TitleSub *string
-	AuthorID *domain.UserID
-	Limit    int
-	Offset   int
+	Type     *domain.AssetType `json:"type"`
+	Tag      *string           `json:"tag"`
+	TitleSub *string           `json:"titleSub"`
+	AuthorID *domain.UserID    `json:"authorId"`
+	Limit    int               `json:"limit"`
+	Offset   int               `json:"offset"`
 }

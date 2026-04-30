@@ -55,6 +55,17 @@ func (r *MemRepo) List(ctx context.Context, f repo.AssetFilter) ([]domain.Asset,
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	limit := f.Limit
+	offset := f.Offset
+
+	if f.Limit <= 0 {
+		limit = 20
+	}
+	if f.Offset < 0 {
+		offset = 0
+	}
+	skipped := 0
+
 	assets := make([]domain.Asset, 0, len(r.assets))
 	for _, a := range r.assets {
 		if f.Type != nil && a.Type != *f.Type {
@@ -67,15 +78,26 @@ func (r *MemRepo) List(ctx context.Context, f repo.AssetFilter) ([]domain.Asset,
 					hasTag = true
 					break
 				}
-				if !hasTag {
-					continue
-				}
+			}
+			if !hasTag {
+				continue
 			}
 		}
 		if f.TitleSub != nil && !strings.Contains(a.Title, *f.TitleSub) {
 			continue
 		}
+		if f.AuthorID != nil && a.AuthorID != *f.AuthorID {
+			continue
+		}
+		if skipped < offset {
+			skipped++
+			continue
+		}
 		assets = append(assets, a)
+
+		if len(assets) >= limit {
+			break
+		}
 	}
 	return assets, nil
 }
@@ -93,8 +115,10 @@ func (r *MemRepo) Update(ctx context.Context, a domain.Asset) error {
 		return repo.ErrNotFound
 	}
 	existing.Title = a.Title
+	existing.Description = a.Description
+	existing.UpdatedAt = a.UpdatedAt
 	existing.Type = a.Type
-	existing.Tags = make([]string, 0, len(a.Tags))
+	existing.Tags = make([]string, len(a.Tags))
 	copy(existing.Tags, a.Tags)
 	r.assetMap[a.ID] = existing
 
@@ -109,6 +133,9 @@ func (r *MemRepo) Update(ctx context.Context, a domain.Asset) error {
 }
 
 func (r *MemRepo) Delete(ctx context.Context, id domain.AssetID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	assetToDelete, exists := r.assetMap[id]
 	if !exists {
 		return repo.ErrNotFound
@@ -117,9 +144,7 @@ func (r *MemRepo) Delete(ctx context.Context, id domain.AssetID) error {
 	lastAsset := r.assets[lastIdx]
 	idToDelete := getAssetIdToDelete(r.assets, id)
 	if lastAsset.ID != assetToDelete.ID {
-		movedAssetId := r.assetMap[lastAsset.ID]
 		r.assets[idToDelete] = r.assets[lastIdx]
-		r.assetMap[id] = movedAssetId
 	}
 	r.assets = r.assets[:lastIdx]
 	delete(r.assetMap, id)

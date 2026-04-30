@@ -70,7 +70,7 @@ func (s *AssetService) Patch(ctx context.Context, id domain.AssetID, patch Patch
 		assetToUpdate.Description = *patch.Description
 	}
 	if patch.Type != nil {
-		assetToUpdate.Type = patch.Type.Type
+		assetToUpdate.Type = *patch.Type
 	}
 	if patch.Tags != nil {
 		assetToUpdate.Tags = make([]string, len(*patch.Tags))
