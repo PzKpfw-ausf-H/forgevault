@@ -33,6 +33,30 @@ func NormalizeTags(tags []string) ([]string, error) {
 	return out, nil
 }
 
+func ValidateNewUser(u *User) error {
+	u.ID = UserID(strings.TrimSpace(string(u.ID)))
+	if u.ID == "" {
+		return ErrInvalidID
+	}
+	if err := ValidateEmail(u.Email); err != nil {
+		return ErrInvalidEmail
+	}
+
+	return nil
+}
+
+func ValidateEmail(email string) error {
+	em := strings.ToLower(strings.TrimSpace(email))
+	if em == "" {
+		return ErrInvalidEmail
+	}
+	if match, err := regexp.MatchString(`@`, em); err != nil || !match {
+		return ErrInvalidEmail
+	}
+
+	return nil
+}
+
 func ValidateNewAsset(a *Asset) error {
 	a.Title = strings.TrimSpace(a.Title)
 	if a.Title == "" {
