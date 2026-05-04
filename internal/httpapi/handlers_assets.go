@@ -37,7 +37,13 @@ func (h *AssetsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	copy(svcReq.Tags, req.Tags)
 
-	a, err := h.svc.Create(r.Context(), svcReq)
+	uid, ok := UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "missing auth context", "")
+		return
+	}
+
+	a, err := h.svc.Create(r.Context(), svcReq, uid)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidTitle) || errors.Is(err, domain.ErrInvalidAssetType) {
 			writeError(w, http.StatusBadRequest, ErrCodeValidation, err.Error(), "")

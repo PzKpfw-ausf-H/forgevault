@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/PzKpfw-ausf-H/forgevault/internal/auth"
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(h *AssetsHandler) http.Handler {
+func NewRouter(h *AssetsHandler, tm *auth.TokenManager) http.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -16,11 +17,17 @@ func NewRouter(h *AssetsHandler) http.Handler {
 	})
 
 	r.Route("/assets", func(r chi.Router) {
-		r.Post("/", h.Create)
+		//public
 		r.Get("/", h.List)
 		r.Get("/{id}", h.GetByID)
-		r.Patch("/{id}", h.Patch)
-		r.Delete("/{id}", h.Delete)
+
+		//protected
+		r.Group(func(r chi.Router) {
+			r.Use(RequireAuth(tm))
+			r.Post("/", h.Create)
+			r.Patch("/{id}", h.Patch)
+			r.Delete("/{id}", h.Delete)
+		})
 	})
 
 	return r

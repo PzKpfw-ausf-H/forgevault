@@ -5,31 +5,23 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/PzKpfw-ausf-H/forgevault/internal/auth"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
-	repo      repo.UsersRepo
-	jwtSecret []byte
-	ttl       time.Duration
-	issuer    string
+	repo repo.UsersRepo
+	tm   *auth.TokenManager
 }
 
-func NewUserService(repo repo.UsersRepo, jwtSecret string, ttl time.Duration, issuer string) *UserService {
+func NewUserService(repo repo.UsersRepo, tm *auth.TokenManager) *UserService {
 	return &UserService{
-		repo:      repo,
-		jwtSecret: []byte(jwtSecret),
-		ttl:       ttl,
-		issuer:    issuer,
+		repo: repo,
+		tm:   tm,
 	}
-}
-
-type AuthClaims struct {
-	jwt.RegisteredClaims
 }
 
 func (us *UserService) Register(ctx context.Context, email, password string) (domain.User, error) {
@@ -62,23 +54,5 @@ func (us *UserService) Login(ctx context.Context, email, password string) (token
 		return "", 0, repo.ErrUnauthorized
 	}
 
-	now := time.Now().UTC()
-	exp := now.Add(us.ttl)
-
-	claims := AuthClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   string(u.ID),
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(exp),
-			Issuer:    us.issuer,
-		},
-	}
-
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := t.SignedString(us.jwtSecret)
-	if err != nil {
-		return "", 0, err
-	}
-
-	return signed, int64(us.ttl.Seconds()), nil
+	return us.tm.New(u.ID)
 }

@@ -21,14 +21,14 @@ func NewAssetService(repo repo.AssetsRepo) *AssetService {
 	}
 }
 
-func (s *AssetService) Create(ctx context.Context, input CreateAssetRequest) (domain.Asset, error) {
+func (s *AssetService) Create(ctx context.Context, input CreateAssetRequest, uid domain.UserID) (domain.Asset, error) {
 	asset := domain.Asset{
 		ID:          domain.AssetID(uuid.New().String()),
 		Title:       input.Title,
 		Description: input.Description,
 		Type:        input.Type,
 		Tags:        make([]string, len(input.Tags)),
-		AuthorID:    "demo-user",
+		AuthorID:    uid,
 		CreatedAt:   s.now().UTC(),
 		UpdatedAt:   s.now().UTC(),
 	}
