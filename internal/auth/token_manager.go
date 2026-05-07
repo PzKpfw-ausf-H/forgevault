@@ -18,6 +18,14 @@ type AuthClaims struct {
 	jwt.RegisteredClaims
 }
 
+func NewTokenManager(secret []byte, ttl time.Duration, issuer string) *TokenManager {
+	return &TokenManager{
+		secret: secret,
+		ttl:    ttl,
+		issuer: issuer,
+	}
+}
+
 func (tm *TokenManager) New(userID domain.UserID) (string, int64, error) {
 	now := time.Now().UTC()
 	exp := now.Add(tm.ttl)

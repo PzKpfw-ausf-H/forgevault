@@ -15,3 +15,12 @@ type TokenResponse struct {
 	TokenType   string `json:"tokenType"`
 	ExpiresIn   int64  `json:"expiresIn"`
 }
+
+func toTokenResponse(token string, expiresIn int64) TokenResponse {
+	var tr TokenResponse
+	tr.AccessToken = token
+	tr.ExpiresIn = expiresIn
+	tr.TokenType = "Bearer"
+
+	return tr
+}
