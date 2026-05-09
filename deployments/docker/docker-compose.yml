@@ -1,0 +1,14 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+    image: postgres:13
+    enviroment:
+      POSTGRES_USER: fogevault
+      POSTGRES_PASSWORD: forgevault
+      POSTGRES_DB: forgevault
+    volumes:
+    - db_data:/var/lib/postgresql/data
+  
+volumes:
+  db_data:
