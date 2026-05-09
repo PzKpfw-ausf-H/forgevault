@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS assets (
     description text not null default '',
     type text not null,
     author_id uuid not null references users(id),
-    created_at timestampz not null,
-    updated_at timestampz not null
+    created_at timestamptz not null,
+    updated_at timestamptz not null
 );
 
 CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type);
