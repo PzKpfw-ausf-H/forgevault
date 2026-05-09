@@ -15,6 +15,7 @@ import (
 	"github.com/PzKpfw-ausf-H/forgevault/internal/httpapi"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo/memory"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/service"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type healthResp struct {
@@ -45,10 +46,23 @@ func main() {
 
 	tm := auth.NewTokenManager([]byte(secret), time.Duration(ttlMin)*time.Minute, issuer)
 
+	//pgxpool
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("db url required")
+	}
+	pool, poolErr := pgxpool.New(context.Background(), dbURL)
+	if poolErr != nil {
+		log.Fatalf("error during creating pool: %v", poolErr)
+	}
+	defer pool.Close()
+
+	// assets config
 	memrepo := memory.NewMemRepo()
 	svc := service.NewAssetService(memrepo)
 	h := httpapi.NewAssetsHandler(svc)
 
+	//users config
 	umemrepo := memory.NewUserMemRepo()
 	usvc := service.NewUserService(umemrepo, tm)
 	uh := httpapi.NewUsersHandler(usvc)
