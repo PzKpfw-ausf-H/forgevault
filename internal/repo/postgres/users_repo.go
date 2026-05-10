@@ -12,17 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UsersRepo struct {
+type UsersSQLRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewUsersRepo(pool *pgxpool.Pool) *UsersRepo {
-	return &UsersRepo{
+func NewUsersSQLRepo(pool *pgxpool.Pool) *UsersSQLRepo {
+	return &UsersSQLRepo{
 		pool: pool,
 	}
 }
 
-func (ur *UsersRepo) Create(ctx context.Context, u domain.User) error {
+func (ur *UsersSQLRepo) Create(ctx context.Context, u domain.User) error {
 	if err := domain.ValidateNewUser(&u); err != nil {
 		return fmt.Errorf("validate user: %v", err)
 	}
@@ -42,7 +42,7 @@ func (ur *UsersRepo) Create(ctx context.Context, u domain.User) error {
 	return nil
 }
 
-func (ur *UsersRepo) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+func (ur *UsersSQLRepo) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	var user domain.User
 
 	row := ur.pool.QueryRow(ctx,
@@ -62,7 +62,7 @@ func (ur *UsersRepo) GetByEmail(ctx context.Context, email string) (domain.User,
 	return user, nil
 }
 
-func (ur *UsersRepo) GetByID(ctx context.Context, id domain.UserID) (domain.User, error) {
+func (ur *UsersSQLRepo) GetByID(ctx context.Context, id domain.UserID) (domain.User, error) {
 	var user domain.User
 
 	row := ur.pool.QueryRow(ctx,
