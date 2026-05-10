@@ -62,6 +62,10 @@ func (ar *AssetsSQLRepo) Create(ctx context.Context, a domain.Asset) error {
 			return err
 		}
 	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -258,36 +262,39 @@ func (ar *AssetsSQLRepo) Update(ctx context.Context, a domain.Asset) error {
 
 	tx, err := ar.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
-		return fmt.Errorf("begin update transaction: %v", err)
+		return err
 	}
-
 	defer tx.Rollback(ctx)
 
-	_, txErr := tx.Exec(ctx,
-		`UPDATE assets SET title=$1, description=$2, type=$3, updated_at=$4
-		WHERE id = $5;
-		DELETE FROM asset_tags WHERE asset_id = $5`,
+	cmd, err := tx.Exec(ctx,
+		`UPDATE assets SET title=$1, description=$2, type=$3, updated_at=$4 WHERE id=$5`,
 		a.Title, a.Description, a.Type, a.UpdatedAt, a.ID,
 	)
-	if txErr != nil {
-		return fmt.Errorf("update and delete asset transaction: %v", err)
+	if err != nil {
+		return fmt.Errorf("update asset: %w", err)
+	}
+	if cmd.RowsAffected() == 0 {
+		return repo.ErrNotFound
+	}
+
+	_, err = tx.Exec(ctx, `DELETE FROM asset_tags WHERE asset_id=$1`, a.ID)
+	if err != nil {
+		return fmt.Errorf("delete asset tags: %w", err)
 	}
 
 	if len(a.Tags) > 0 {
 		b := &pgx.Batch{}
 		for _, tag := range a.Tags {
-			b.Queue(
-				`INSERT INTO asset_tags (asset_id, tag) VALUES ($1, $2)`,
-				a.ID,
-				tag,
-			)
+			b.Queue(`INSERT INTO asset_tags (asset_id, tag) VALUES ($1,$2)`, a.ID, tag)
 		}
-
 		br := tx.SendBatch(ctx, b)
 		if err := br.Close(); err != nil {
-			return err
+			return fmt.Errorf("insert asset tags: %w", err)
 		}
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit update: %w", err)
+	}
 	return nil
 }

@@ -13,7 +13,7 @@ import (
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/auth"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/httpapi"
-	"github.com/PzKpfw-ausf-H/forgevault/internal/repo/memory"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/repo/postgres"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -58,12 +58,12 @@ func main() {
 	defer pool.Close()
 
 	// assets config
-	memrepo := memory.NewMemRepo()
+	memrepo := postgres.NewAssetsSQLRepo(pool)
 	svc := service.NewAssetService(memrepo)
 	h := httpapi.NewAssetsHandler(svc)
 
 	//users config
-	umemrepo := memory.NewUserMemRepo()
+	umemrepo := postgres.NewUsersSQLRepo(pool)
 	usvc := service.NewUserService(umemrepo, tm)
 	uh := httpapi.NewUsersHandler(usvc)
 

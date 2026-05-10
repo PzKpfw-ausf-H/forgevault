@@ -4,3 +4,5 @@
 ## How to start: 
 * **make run** to start the service
 * **make test** to do tests
+* **make db-up** to lauch sql database
+* **make migrate-up** to make migrations

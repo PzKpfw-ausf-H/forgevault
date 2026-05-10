@@ -1,7 +1,9 @@
 -- +goose Up
+CREATE EXTENSION IF NOT EXISTS citext;
+
 CREATE TABLE IF NOT EXISTS users (
     id uuid primary key,
-    email text not null unique,
+    email CITEXT not null unique,
     password_hash text not null,
     created_at timestamptz not null
 );
