@@ -1,3 +1,7 @@
+// Package memory provides an in-memory repository implementation.
+//
+// Deprecated: This package is kept for local/early iterations.
+// The project currently uses internal/repo/postgres instead.
 package memory
 
 import (
