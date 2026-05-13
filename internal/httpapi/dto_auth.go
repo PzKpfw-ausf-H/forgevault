@@ -10,16 +10,28 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type TokenResponse struct {
-	AccessToken string `json:"accessToken"`
-	TokenType   string `json:"tokenType"`
-	ExpiresIn   int64  `json:"expiresIn"`
+type RefreshRequest struct {
+	RefreshToken string `json:"refreshToken"`
 }
 
-func toTokenResponse(token string, expiresIn int64) TokenResponse {
+type LogoutRequest struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type TokenResponse struct {
+	AccessToken      string `json:"accessToken"`
+	TokenType        string `json:"tokenType"`
+	ExpiresIn        int64  `json:"expiresIn"`
+	RefreshToken     string `json:"refreshToken"`
+	RefreshExpiresIn int64  `json:"refreshExpiresIn"`
+}
+
+func toTokenResponse(accessToken, refreshToken string, expiresIn, refreshExpiresIn int64) TokenResponse {
 	var tr TokenResponse
-	tr.AccessToken = token
+	tr.AccessToken = accessToken
+	tr.RefreshToken = refreshToken
 	tr.ExpiresIn = expiresIn
+	tr.RefreshExpiresIn = refreshExpiresIn
 	tr.TokenType = "Bearer"
 
 	return tr

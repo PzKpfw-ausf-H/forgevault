@@ -25,13 +25,13 @@ func (uh *UsersHandler) Login(w http.ResponseWriter, r *http.Request) {
 	email := req.Email
 	password := req.Password
 
-	token, expiresIn, err := uh.svc.Login(r.Context(), email, password)
+	accessToken, refreshToken, expiresIn, refreshExpiresIn, err := uh.svc.Login(r.Context(), email, password)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, ErrCodeUnauthorized, "invalid token", "")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toTokenResponse(token, expiresIn))
+	writeJSON(w, http.StatusOK, toTokenResponse(accessToken, refreshToken, expiresIn, refreshExpiresIn))
 }
 
 func (uh *UsersHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -47,4 +47,35 @@ func (uh *UsersHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, user)
+}
+
+func (uh *UsersHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var req RefreshRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusUnauthorized, ErrCodeUnauthorized, "invalid refresh token", "")
+		return
+	}
+
+	newAccess, newRefresh, accessExpiresIn, refreshExpiresIn, err := uh.svc.Refresh(r.Context(), req.RefreshToken)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, ErrCodeUnauthorized, "error while refreshing", "")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, toTokenResponse(newAccess, newRefresh, accessExpiresIn, refreshExpiresIn))
+}
+
+func (uh *UsersHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var req LogoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "bad request", "")
+		return
+	}
+
+	if err := uh.svc.Logout(r.Context(), req.RefreshToken); err != nil {
+		writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "bad request", "")
+		return
+	}
+
+	writeJSON(w, http.StatusNoContent, "no content")
 }

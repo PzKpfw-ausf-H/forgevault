@@ -33,6 +33,8 @@ func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler) http.H
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", ah.Register)
 		r.Post("/login", ah.Login)
+		r.Post("/refresh", ah.Refresh)
+		r.Post("/logout", ah.Logout)
 	})
 
 	return r

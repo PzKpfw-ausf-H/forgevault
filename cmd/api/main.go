@@ -46,6 +46,16 @@ func main() {
 
 	tm := auth.NewTokenManager([]byte(secret), time.Duration(ttlMin)*time.Minute, issuer)
 
+	//refresh token TTL
+	refreshTTLDays := 7
+	if v := os.Getenv("REFRESH_TTL_DAYS"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			log.Fatalf("REFRESH_TTL_DAYS must be a positive int")
+		}
+		refreshTTLDays = n
+	}
+
 	//pgxpool
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -64,7 +74,8 @@ func main() {
 
 	//users config
 	umemrepo := postgres.NewUsersSQLRepo(pool)
-	usvc := service.NewUserService(umemrepo, tm)
+	refreshSessions := postgres.NewRefreshSessionSQLRepo(pool)
+	usvc := service.NewUserService(umemrepo, tm, refreshSessions, time.Duration(refreshTTLDays)*24*time.Hour)
 	uh := httpapi.NewUsersHandler(usvc)
 
 	router := httpapi.NewRouter(h, tm, uh)
