@@ -17,3 +17,5 @@ migrate-up:
 	goose up
 migrate-down:
 	goose down
+migrate-show:
+	goose -dir migrations status

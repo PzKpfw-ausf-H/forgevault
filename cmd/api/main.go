@@ -18,10 +18,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type healthResp struct {
-	Status string `json:"status"`
-}
-
 func main() {
 
 	// TOKEN MANAGER CONFIG
@@ -68,8 +64,8 @@ func main() {
 	defer pool.Close()
 
 	// assets config
-	memrepo := postgres.NewAssetsSQLRepo(pool)
-	svc := service.NewAssetService(memrepo)
+	assetsRepo := postgres.NewAssetsSQLRepo(pool)
+	svc := service.NewAssetService(assetsRepo)
 	h := httpapi.NewAssetsHandler(svc)
 
 	//users config

@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
@@ -29,6 +30,7 @@ func (uh *UsersHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, refreshToken, expiresIn, refreshExpiresIn, err := uh.svc.Login(r.Context(), email, password)
 	if err != nil {
+		log.Printf("LOGIN ERROR: %+v", err)
 		if errors.Is(err, repo.ErrUnauthorized) {
 			writeError(w, http.StatusUnauthorized, ErrCodeUnauthorized, "invalid credentials", "")
 			return
