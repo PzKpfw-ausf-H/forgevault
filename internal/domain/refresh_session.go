@@ -12,6 +12,6 @@ type RefreshSession struct {
 	TokenHash  string
 	ExpiresAt  time.Time
 	CreatedAt  time.Time
-	RevokedAt  time.Time
+	RevokedAt  *time.Time
 	ReplacedBy *uuid.UUID
 }

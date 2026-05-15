@@ -24,7 +24,7 @@ func NewUsersSQLRepo(pool *pgxpool.Pool) *UsersSQLRepo {
 
 func (ur *UsersSQLRepo) Create(ctx context.Context, u domain.User) error {
 	if err := domain.ValidateNewUser(&u); err != nil {
-		return fmt.Errorf("validate user: %v", err)
+		return repo.ErrUnauthorized
 	}
 
 	_, err := ur.pool.Exec(ctx,

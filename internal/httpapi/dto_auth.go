@@ -1,5 +1,7 @@
 package httpapi
 
+import "github.com/PzKpfw-ausf-H/forgevault/internal/domain"
+
 type RegisterRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -26,6 +28,11 @@ type TokenResponse struct {
 	RefreshExpiresIn int64  `json:"refreshExpiresIn"`
 }
 
+type RegisterResponse struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+}
+
 func toTokenResponse(accessToken, refreshToken string, expiresIn, refreshExpiresIn int64) TokenResponse {
 	var tr TokenResponse
 	tr.AccessToken = accessToken
@@ -35,4 +42,12 @@ func toTokenResponse(accessToken, refreshToken string, expiresIn, refreshExpires
 	tr.TokenType = "Bearer"
 
 	return tr
+}
+
+func toRegisterResponse(u domain.User) RegisterResponse {
+	var r RegisterResponse
+	r.ID = string(u.ID)
+	r.Email = u.Email
+
+	return r
 }
