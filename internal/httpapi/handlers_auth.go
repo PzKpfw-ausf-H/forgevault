@@ -50,6 +50,8 @@ func (uh *UsersHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := uh.svc.Register(r.Context(), req.Email, req.Password)
 	if err != nil {
+		log.Printf("REGISTER ERROR: %+v", err)
+
 		if errors.Is(err, repo.ErrConflict) {
 			writeError(w, http.StatusConflict, ErrCodeConflict, "conflict", "")
 			return

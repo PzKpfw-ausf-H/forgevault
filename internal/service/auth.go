@@ -37,7 +37,7 @@ func (us *UserService) Register(ctx context.Context, email, password string) (do
 		CreatedAt:    time.Now().UTC(),
 	}
 	if len(password) < 8 {
-		return domain.User{}, repo.ErrInvalidPassword
+		return domain.User{}, ErrInvalidPassword
 	}
 	passwdHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

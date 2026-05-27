@@ -10,7 +10,7 @@ test:
 tidy:
 	go mod tidy
 db-up:
-	docker compose -f deployments/docker/docker-compose.yaml up -d minio
+	docker compose -f deployments/docker/docker-compose.yaml up -d
 	docker ps
 db-down:
 	docker compose -f deployments/docker/docker-compose.yaml down

@@ -11,6 +11,8 @@ import (
 func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler, fh *FilesHandler) http.Handler {
 	r := chi.NewRouter()
 
+	MountSwagger(r)
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
@@ -41,4 +43,18 @@ func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler, fh *Fi
 	})
 
 	return r
+}
+
+func MountSwagger(r chi.Router) {
+	r.Get("/openapi/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "openapi/openapi.yaml")
+	})
+
+	//swagger UI static files
+	fs := http.FileServer(http.Dir("web/swagger-ui"))
+	r.Handle("/swagger/*", http.StripPrefix("/swagger/", fs))
+	//redirect
+	r.Get("/swagger", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/swagger/", http.StatusMovedPermanently)
+	})
 }
