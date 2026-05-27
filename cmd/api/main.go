@@ -15,6 +15,7 @@ import (
 	"github.com/PzKpfw-ausf-H/forgevault/internal/httpapi"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo/postgres"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/service"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/storage/minio"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -42,6 +43,21 @@ func main() {
 
 	tm := auth.NewTokenManager([]byte(secret), time.Duration(ttlMin)*time.Minute, issuer)
 
+	// S3 config env
+	bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		log.Fatal("S3_BUCKET is required")
+	}
+
+	s3TtlMin := 15
+	if v := os.Getenv("S3_PRESIGN_TTL_MIN"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			log.Fatal("S3_PRESIGN_TTL_MIN must be a positive int")
+		}
+		s3TtlMin = n
+	}
+
 	//refresh token TTL
 	refreshTTLDays := 7
 	if v := os.Getenv("REFRESH_TTL_DAYS"); v != "" {
@@ -68,13 +84,24 @@ func main() {
 	svc := service.NewAssetService(assetsRepo)
 	h := httpapi.NewAssetsHandler(svc)
 
+	//S3 config
+	S3, err := minio.NewFromEnv()
+	if err != nil {
+		log.Fatal("error creating S3 storage from env")
+	}
+
+	// files config
+	filesRepo := postgres.NewAssetFilesSQLRepo(pool)
+	fileSvc := service.NewFileService(filesRepo, bucket, S3, time.Duration(s3TtlMin))
+	fh := httpapi.NewFilesHandler(fileSvc)
+
 	//users config
 	umemrepo := postgres.NewUsersSQLRepo(pool)
 	refreshSessions := postgres.NewRefreshSessionSQLRepo(pool)
 	usvc := service.NewUserService(umemrepo, tm, refreshSessions, time.Duration(refreshTTLDays)*24*time.Hour)
 	uh := httpapi.NewUsersHandler(usvc)
 
-	router := httpapi.NewRouter(h, tm, uh)
+	router := httpapi.NewRouter(h, tm, uh, fh)
 
 	srv := &http.Server{
 		Addr:    ":8080",

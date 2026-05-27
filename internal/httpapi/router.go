@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler) http.Handler {
+func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler, fh *FilesHandler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -27,6 +27,9 @@ func NewRouter(h *AssetsHandler, tm *auth.TokenManager, ah *UsersHandler) http.H
 			r.Post("/", h.Create)
 			r.Patch("/{id}", h.Patch)
 			r.Delete("/{id}", h.Delete)
+			r.Post("/{id}/files/upload-url", fh.UploadURL)
+			r.Post("/{id}/files/confirm", fh.Confirm)
+			r.Get("/{id}/files/{version}/download-url", fh.DownloadURL)
 		})
 	})
 

@@ -14,6 +14,10 @@ type AssetFilesSQLRepo struct {
 	pool *pgxpool.Pool
 }
 
+func NewAssetFilesSQLRepo(pool *pgxpool.Pool) *AssetFilesSQLRepo {
+	return &AssetFilesSQLRepo{pool: pool}
+}
+
 func (afr *AssetFilesSQLRepo) GetMaxVersion(ctx context.Context, assetID domain.AssetID) (int, error) {
 	var v int
 	row := afr.pool.QueryRow(ctx,
