@@ -2,10 +2,12 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
+	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/service"
 	"github.com/go-chi/chi/v5"
 )
@@ -35,6 +37,24 @@ func (fh *FilesHandler) UploadURL(w http.ResponseWriter, r *http.Request) {
 
 	version, storageKey, uploadURL, expiresInSec, err := fh.svc.GetUploadURL(r.Context(), uid, assetID, req.Filename, req.ContentType)
 	if err != nil {
+		//errors mapping
+		if errors.Is(err, repo.ErrValidation) {
+			writeError(w, http.StatusBadRequest, ErrCodeValidation, "validation", "")
+			return
+		}
+		if errors.Is(err, repo.ErrBadRequest) {
+			writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "bad request", "")
+			return
+		}
+		if errors.Is(err, repo.ErrUnauthorized) {
+			writeError(w, http.StatusForbidden, ErrCodeUnauthorized, "unauthorized", "")
+			return
+		}
+		if errors.Is(err, repo.ErrNotFound) {
+			writeError(w, http.StatusNotFound, ErrCodeNotFound, "not found", "")
+			return
+		}
+
 		writeError(w, http.StatusInternalServerError, ErrCodeInternal, "internal error", "")
 		return
 	}
@@ -59,6 +79,24 @@ func (fh *FilesHandler) Confirm(w http.ResponseWriter, r *http.Request) {
 
 	_, err := fh.svc.ConfirmUpload(r.Context(), uid, assetID, req.Version, req.Filename, req.ContentType, req.SizeBytes, req.StorageKey, req.Checksum)
 	if err != nil {
+		//errors mapping
+		if errors.Is(err, repo.ErrValidation) {
+			writeError(w, http.StatusBadRequest, ErrCodeValidation, "validation", "")
+			return
+		}
+		if errors.Is(err, repo.ErrBadRequest) {
+			writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "bad request", "")
+			return
+		}
+		if errors.Is(err, repo.ErrUnauthorized) {
+			writeError(w, http.StatusForbidden, ErrCodeUnauthorized, "unauthorized", "")
+			return
+		}
+		if errors.Is(err, repo.ErrNotFound) {
+			writeError(w, http.StatusNotFound, ErrCodeNotFound, "not found", "")
+			return
+		}
+
 		writeError(w, http.StatusInternalServerError, ErrCodeInternal, "internal error", "")
 		return
 	}
@@ -75,11 +113,29 @@ func (fh *FilesHandler) DownloadURL(w http.ResponseWriter, r *http.Request) {
 	assetID := domain.AssetID(chi.URLParam(r, "id"))
 	version, err := strconv.Atoi(chi.URLParam(r, "version"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, ErrCodeInternal, "internal error", "")
+		writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "invalid version", "")
 		return
 	}
 	downloadUrl, expiresIn, err := fh.svc.GetDownloadURL(r.Context(), uid, assetID, version)
 	if err != nil {
+		//errors mapping
+		if errors.Is(err, repo.ErrValidation) {
+			writeError(w, http.StatusBadRequest, ErrCodeValidation, "validation", "")
+			return
+		}
+		if errors.Is(err, repo.ErrBadRequest) {
+			writeError(w, http.StatusBadRequest, ErrCodeBadRequest, "bad request", "")
+			return
+		}
+		if errors.Is(err, repo.ErrUnauthorized) {
+			writeError(w, http.StatusForbidden, ErrCodeUnauthorized, "unauthorized", "")
+			return
+		}
+		if errors.Is(err, repo.ErrNotFound) {
+			writeError(w, http.StatusNotFound, ErrCodeNotFound, "not found", "")
+			return
+		}
+
 		writeError(w, http.StatusInternalServerError, ErrCodeInternal, "internal error", "")
 		return
 	}

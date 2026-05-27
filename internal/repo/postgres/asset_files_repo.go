@@ -7,6 +7,7 @@ import (
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,16 +22,12 @@ func NewAssetFilesSQLRepo(pool *pgxpool.Pool) *AssetFilesSQLRepo {
 func (afr *AssetFilesSQLRepo) GetMaxVersion(ctx context.Context, assetID domain.AssetID) (int, error) {
 	var v int
 	row := afr.pool.QueryRow(ctx,
-		`SELECT version FROM asset_files
-		WHERE asset_id == $1`,
+		`SELECT COALESCE(MAX(version), 0) FROM asset_files
+		WHERE asset_id = $1`,
 		assetID,
 	)
 
-	if err := row.Scan(v); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, repo.ErrNotFound
-		}
-
+	if err := row.Scan(&v); err != nil {
 		return 0, err
 	}
 
@@ -38,6 +35,8 @@ func (afr *AssetFilesSQLRepo) GetMaxVersion(ctx context.Context, assetID domain.
 }
 
 func (afr *AssetFilesSQLRepo) Create(ctx context.Context, file domain.AssetFile) error {
+	const errCodeUnique = "23505"
+
 	if _, err := afr.pool.Exec(ctx,
 		`INSERT INTO asset_files (id, asset_id, version, filename, size_bytes, content_type, storage_key, checksum, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -51,6 +50,12 @@ func (afr *AssetFilesSQLRepo) Create(ctx context.Context, file domain.AssetFile)
 		file.Checksum,
 		file.CreatedAt,
 	); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == errCodeUnique {
+				return repo.ErrConflict
+			}
+		}
 		return err
 	}
 
@@ -88,6 +93,7 @@ func (afr *AssetFilesSQLRepo) ListByAsset(ctx context.Context, assetID domain.As
 	if err != nil {
 		return []domain.AssetFile{}, err
 	}
+	defer rows.Close()
 
 	out := make([]domain.AssetFile, 0)
 
@@ -103,10 +109,6 @@ func (afr *AssetFilesSQLRepo) ListByAsset(ctx context.Context, assetID domain.As
 
 	if err := rows.Err(); err != nil {
 		return []domain.AssetFile{}, err
-	}
-
-	if len(out) == 0 {
-		return []domain.AssetFile{}, repo.ErrNotFound
 	}
 
 	return out, nil

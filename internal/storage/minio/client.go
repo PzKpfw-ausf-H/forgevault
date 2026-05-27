@@ -28,8 +28,10 @@ func NewFromEnv() (*Client, error) {
 		return nil, ErrMissingSecret
 	}
 	useSSLStr := os.Getenv("S3_USE_SSL")
-
-	useSSL, _ := strconv.ParseBool(useSSLStr)
+	useSSL, err := strconv.ParseBool(useSSLStr)
+	if err != nil {
+		return nil, ErrMissingSSL
+	}
 
 	u, err := url.Parse(endpoint)
 	if err != nil {

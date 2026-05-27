@@ -35,7 +35,7 @@ func main() {
 	ttlMin := 60
 	if v := os.Getenv("JWT_TTL_MIN"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err != nil {
+		if err != nil || n <= 0 {
 			log.Fatal("JWT_TTL_MIN must be a positive int")
 		}
 		ttlMin = n
@@ -62,7 +62,7 @@ func main() {
 	refreshTTLDays := 7
 	if v := os.Getenv("REFRESH_TTL_DAYS"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err != nil {
+		if err != nil || n <= 0 {
 			log.Fatalf("REFRESH_TTL_DAYS must be a positive int")
 		}
 		refreshTTLDays = n
@@ -89,16 +89,19 @@ func main() {
 	if err != nil {
 		log.Fatal("error creating S3 storage from env")
 	}
+	if err := S3.EnsureBucket(context.Background(), bucket); err != nil {
+		log.Fatalf("ensure bucket: %v", err)
+	}
 
 	// files config
 	filesRepo := postgres.NewAssetFilesSQLRepo(pool)
-	fileSvc := service.NewFileService(filesRepo, bucket, S3, time.Duration(s3TtlMin))
+	fileSvc := service.NewFileService(filesRepo, bucket, S3, time.Duration(s3TtlMin)*time.Minute, assetsRepo)
 	fh := httpapi.NewFilesHandler(fileSvc)
 
 	//users config
-	umemrepo := postgres.NewUsersSQLRepo(pool)
+	usersRepo := postgres.NewUsersSQLRepo(pool)
 	refreshSessions := postgres.NewRefreshSessionSQLRepo(pool)
-	usvc := service.NewUserService(umemrepo, tm, refreshSessions, time.Duration(refreshTTLDays)*24*time.Hour)
+	usvc := service.NewUserService(usersRepo, tm, refreshSessions, time.Duration(refreshTTLDays)*24*time.Hour)
 	uh := httpapi.NewUsersHandler(usvc)
 
 	router := httpapi.NewRouter(h, tm, uh, fh)
