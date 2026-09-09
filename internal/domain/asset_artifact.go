@@ -31,23 +31,23 @@ func (a AssetArtifact) Validate() error {
 	}
 
 	if strings.TrimSpace(a.MimeType) == "" {
-		return fmt.Errorf("%w: asset artifact mime type is empty")
+		return fmt.Errorf("%w: asset artifact mime type is empty", ErrValidation)
 	}
 
 	if a.Size < 0 {
-		return fmt.Errorf("%w: asset artifact size cannot be less then zero")
+		return fmt.Errorf("%w: asset artifact size cannot be less then zero", ErrValidation)
 	}
 
 	if strings.TrimSpace(a.Checksum) == "" {
-		return fmt.Errorf("%w: asset artifact checksum is empty")
+		return fmt.Errorf("%w: asset artifact checksum is empty", ErrValidation)
 	}
 
 	if strings.TrimSpace(a.StorageKey) == "" {
-		return fmt.Errorf("%w: asset artifact storage key is empty")
+		return fmt.Errorf("%w: asset artifact storage key is empty", ErrValidation)
 	}
 
 	if a.CreatedAt.IsZero() {
-		return fmt.Errorf("%w: asset artifact created at is zero")
+		return fmt.Errorf("%w: asset artifact created at is zero", ErrValidation)
 	}
 
 	return nil

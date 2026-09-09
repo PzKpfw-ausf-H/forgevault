@@ -55,19 +55,19 @@ func (a Asset) Validate() error {
 	}
 
 	if !a.Type.Valid() {
-		fmt.Errorf("%w: asset type is not valid: %v", ErrValidation, a.Type)
+		return fmt.Errorf("%w: asset type is not valid: %v", ErrValidation, a.Type)
 	}
 
 	if !a.ProcessingStatus.Valid() {
-		fmt.Errorf("%w: asset processing status is not valid: %v", ErrValidation, a.ProcessingStatus)
+		return fmt.Errorf("%w: asset processing status is not valid: %v", ErrValidation, a.ProcessingStatus)
 	}
 
 	if a.CreatedAt.IsZero() {
-		fmt.Errorf("%w: asset created at is zero")
+		return fmt.Errorf("%w: asset created at is zero", ErrValidation)
 	}
 
 	if a.UpdatedAt.IsZero() {
-		fmt.Errorf("%w: asset updated at is zero")
+		return fmt.Errorf("%w: asset updated at is zero", ErrValidation)
 	}
 
 	return nil

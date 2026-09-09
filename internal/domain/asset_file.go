@@ -43,7 +43,7 @@ func (a AssetFile) Validate() error {
 		}
 
 		if !a.TextureType.Valid() {
-			return fmt.Errorf("%w: asset file texture type is not valid: %v", ErrValidation, a.TextureType)
+			return fmt.Errorf("%w: asset file texture type is not valid: %v", ErrValidation, *a.TextureType)
 		}
 	default:
 		if a.TextureType != nil {
@@ -73,6 +73,10 @@ func (a AssetFile) Validate() error {
 
 	if strings.TrimSpace(a.Checksum) == "" {
 		return fmt.Errorf("%w: asset file checksum is empty", ErrValidation)
+	}
+
+	if a.CreatedAt.IsZero() {
+		return fmt.Errorf("%w: asset file created at is zero", ErrValidation)
 	}
 
 	return nil
