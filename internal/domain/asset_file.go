@@ -2,14 +2,19 @@ package domain
 
 import "time"
 
+// AssetFile represents an original user-uploaded file
+// Generated derivatives belong to AssetArtifacts
+
 type AssetFile struct {
-	ID          FileID
-	AssetID     AssetID
-	Version     int
-	Filename    string
-	SizeBytes   int64
-	ContentType string
-	StorageKey  string
-	Checksum    string
-	CreatedAt   time.Time
+	ID           AssetFileID
+	AssetID      AssetID
+	Role         FileRole
+	TextureType  *TextureType
+	OriginalName string
+	MimeType     string
+	Extension    string
+	Size         int64
+	StorageKey   string
+	Checksum     string
+	CreatedAt    time.Time
 }
