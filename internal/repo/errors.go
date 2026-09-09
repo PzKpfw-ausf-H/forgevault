@@ -2,11 +2,7 @@ package repo
 
 import "errors"
 
-var ErrNotFound = errors.New("item not found")
-var ErrConflict = errors.New("id already exists")
-var ErrInvalidEmail = errors.New("invalid email")
-var ErrInvalidPassword = errors.New("invalid password")
-var ErrUnauthorized = errors.New("unauthorized")
-var ErrInternal = errors.New("internal error")
-var ErrBadRequest = errors.New("bad request")
-var ErrValidation = errors.New("validation")
+var (
+	ErrNotFound      = errors.New("repository: not found")
+	ErrAlreadyExists = errors.New("repository: already exists")
+)
