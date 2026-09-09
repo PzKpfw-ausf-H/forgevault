@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
@@ -39,11 +39,12 @@ func (fs *FileService) GetUploadURL(ctx context.Context, userID domain.UserID, a
 		return 0, "", "", 0, repo.ErrUnauthorized
 	}
 
-	if filename == "" {
-		return 0, "", "", 0, fmt.Errorf("filename: %w", repo.ErrValidation)
+	if err := validateFilename(filename); err != nil {
+		return 0, "", "", 0, err
 	}
-	if contentType == "" {
-		return 0, "", "", 0, fmt.Errorf("content type: %w", repo.ErrValidation)
+
+	if strings.TrimSpace(contentType) == "" {
+		return 0, "", "", 0, repo.ErrBadRequest
 	}
 
 	max, err := fs.repo.GetMaxVersion(ctx, assetID)
@@ -53,7 +54,7 @@ func (fs *FileService) GetUploadURL(ctx context.Context, userID domain.UserID, a
 
 	version = max + 1
 
-	storageKey = "assets/" + string(assetID) + "/v" + strconv.Itoa(version) + "/" + filename
+	storageKey = buildStorageKey(assetID, version, filename)
 
 	uploadURL, err = fs.s3.PresignPut(ctx, fs.bucket, storageKey, fs.ttl)
 	if err != nil {
@@ -73,27 +74,26 @@ func (fs *FileService) ConfirmUpload(ctx context.Context, userID domain.UserID, 
 		return domain.AssetFile{}, repo.ErrUnauthorized
 	}
 
-	if version <= 0 {
-		return domain.AssetFile{}, fmt.Errorf("version: %w", repo.ErrValidation)
+	if err := validateFilename(filename); err != nil {
+		return domain.AssetFile{}, err
 	}
-	if sizeBytes <= 0 {
-		return domain.AssetFile{}, fmt.Errorf("size bytes: %w", repo.ErrValidation)
+	if version < 1 || sizeBytes <= 0 {
+		return domain.AssetFile{}, repo.ErrBadRequest
+	}
+	if strings.TrimSpace(contentType) == "" {
+		return domain.AssetFile{}, repo.ErrBadRequest
+	}
+	if strings.TrimSpace(storageKey) == "" {
+		return domain.AssetFile{}, repo.ErrBadRequest
 	}
 
-	expected := "assets/" + string(assetID) + "/v" + strconv.Itoa(version) + "/" + filename
+	expected := buildStorageKey(assetID, version, filename)
 
 	if storageKey == "" {
 		return domain.AssetFile{}, fmt.Errorf("storage key: %w", repo.ErrValidation)
 	}
 	if storageKey != expected {
 		return domain.AssetFile{}, repo.ErrBadRequest
-	}
-
-	if filename == "" {
-		return domain.AssetFile{}, fmt.Errorf("filename: %w", repo.ErrValidation)
-	}
-	if contentType == "" {
-		return domain.AssetFile{}, fmt.Errorf("content type: %w", repo.ErrValidation)
 	}
 
 	fileID := uuid.New()

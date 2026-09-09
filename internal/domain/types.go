@@ -1,7 +1,5 @@
 package domain
 
-type AssetID string
-type UserID string
 type FileID string
 type AssetType string
 

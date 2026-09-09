@@ -52,7 +52,7 @@ func main() {
 	s3TtlMin := 15
 	if v := os.Getenv("S3_PRESIGN_TTL_MIN"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err != nil {
+		if err != nil || n <= 0 {
 			log.Fatal("S3_PRESIGN_TTL_MIN must be a positive int")
 		}
 		s3TtlMin = n
