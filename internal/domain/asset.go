@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 type AssetType string
 
@@ -35,4 +39,36 @@ type Asset struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (a Asset) Validate() error {
+	if a.ID == "" {
+		return fmt.Errorf("%w: asset id is empty", ErrValidation)
+	}
+
+	if strings.TrimSpace(a.Title) == "" {
+		return fmt.Errorf("%w: asset title is empy", ErrValidation)
+	}
+
+	if a.UploadedBy == "" {
+		return fmt.Errorf("%w: asset uploaded by is empty", ErrValidation)
+	}
+
+	if !a.Type.Valid() {
+		fmt.Errorf("%w: asset type is not valid: %v", ErrValidation, a.Type)
+	}
+
+	if !a.ProcessingStatus.Valid() {
+		fmt.Errorf("%w: asset processing status is not valid: %v", ErrValidation, a.ProcessingStatus)
+	}
+
+	if a.CreatedAt.IsZero() {
+		fmt.Errorf("%w: asset created at is zero")
+	}
+
+	if a.UpdatedAt.IsZero() {
+		fmt.Errorf("%w: asset updated at is zero")
+	}
+
+	return nil
 }

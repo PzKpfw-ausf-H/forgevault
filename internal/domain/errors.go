@@ -2,6 +2,9 @@ package domain
 
 import "errors"
 
+/*
+	These are the old errors. They might be removed soon
+
 var ErrInvalidTitle = errors.New("invalid title")
 var ErrInvalidAssetType = errors.New("invalid asset type")
 var ErrInvalidTag = errors.New("invalid tag")
@@ -13,3 +16,6 @@ var ErrInvalidContentType = errors.New("invalid content type")
 var ErrInvalidStorageKey = errors.New("invalid storage key")
 var ErrInvalidID = errors.New("invalid id")
 var ErrInvalidEmail = errors.New("invalid email")
+*/
+
+var ErrValidation = errors.New("validation error")
