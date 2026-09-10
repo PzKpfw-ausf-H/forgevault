@@ -4,10 +4,10 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'student',
-    created_at TIMESTAMPZ NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT users_role_check
-        CHECK (role IN ('student', 'employee', 'admin', 'superadmin')),
+        CHECK (role IN ('student', 'employee', 'admin', 'superadmin'))
 );
 
 -- +goose Down

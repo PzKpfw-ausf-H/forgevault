@@ -8,27 +8,24 @@ CREATE TABLE IF NOT EXISTS assets (
     uploaded_by UUID NOT NULL,
 
     type TEXT NOT NULL,
-    processing_status TEXT NOT NULL
+    processing_status TEXT NOT NULL,
 
-    created_at TIMESTAMPZ NOT NULL,
-    updated_at TIMESTAMPZ NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
 
-    CONSTRAINT asset_uploaded_by_fk (
+    CONSTRAINT asset_uploaded_by_fk
         FOREIGN KEY (uploaded_by)
-        REFERENCES users(id)
-    )
+        REFERENCES users(id),
 
-    CONSTRAINT asset_type_check(
-        CHECK (type IN ('3d', '2d', 'audio', 'vfx', 'doc'))
-    )
+    CONSTRAINT asset_type_check
+        CHECK (type IN ('3d', '2d', 'audio', 'vfx', 'doc')),
 
-    CONSTRAINT asset_processing_status_check(
+    CONSTRAINT asset_processing_status_check
         CHECK (processing_status IN ('pending', 'processing', 'ready', 'failed'))
-    )
 );
 
 CREATE INDEX IF NOT EXISTS idx_assets_uploaded_by ON assets(uploaded_by);
-CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type)
+CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type);
 
 -- +goose Down
 DROP INDEX IF EXISTS idx_assets_uploaded_by;
