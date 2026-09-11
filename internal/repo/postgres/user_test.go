@@ -110,3 +110,84 @@ func TestUserRepository_GetByIDNonExisting(t *testing.T) {
 		t.Fatalf("GetById() nonexistst expected ErrNotFound but got %v", err)
 	}
 }
+
+func TestUserRepository_GetByEmail(t *testing.T) {
+	db := openTestDB(t)
+	cleanTestDB(t, db)
+
+	ctx := context.Background()
+
+	want := validUser()
+	r := NewUserRepository(db)
+
+	if err := r.Create(ctx, want); err != nil {
+		t.Fatalf("create() user error: %v", err)
+	}
+
+	got, err := r.GetByEmail(ctx, want.Email)
+	if err != nil {
+		t.Fatalf("GetByEmail() user error: %v", err)
+	}
+
+	if got.ID != want.ID {
+		t.Errorf("want id %q but got %q", want.ID, got.ID)
+	}
+
+	if got.Email != want.Email {
+		t.Errorf("want email %s but got %s", want.Email, got.Email)
+	}
+
+	if got.PasswordHash != want.PasswordHash {
+		t.Errorf("want hash %s but got %s", want.PasswordHash, got.PasswordHash)
+	}
+
+	if got.Role != want.Role {
+		t.Errorf("want role %q but got %q", want.Role, got.Role)
+	}
+
+	if !got.CreatedAt.Equal(want.CreatedAt) {
+		t.Errorf("want created_at %v but got %v", want.CreatedAt, got.CreatedAt)
+	}
+}
+
+func TestUserRepository_UpdateRole(t *testing.T) {
+	db := openTestDB(t)
+	cleanTestDB(t, db)
+
+	ctx := context.Background()
+
+	r := NewUserRepository(db)
+	user := validUser()
+
+	if err := r.Create(ctx, user); err != nil {
+		t.Fatalf("create() user error: %v", err)
+	}
+
+	if err := r.UpdateRole(ctx, user.ID, domain.RoleEmployee); err != nil {
+		t.Fatalf("UpdateRole() error: %v", err)
+	}
+
+	got, err := r.GetByID(ctx, user.ID)
+	if err != nil {
+		t.Fatalf("GetByID() error: %v", err)
+	}
+
+	if got.Role != domain.RoleEmployee {
+		t.Fatalf("expected role %q but got %q", domain.RoleEmployee, got.Role)
+	}
+}
+
+func TestUserRepository_UpdateRole_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	cleanTestDB(t, db)
+
+	ctx := context.Background()
+
+	r := NewUserRepository(db)
+
+	err := r.UpdateRole(ctx, domain.UserID("99999999-9999-9999-9999-999999999999"), domain.RoleEmployee)
+
+	if !errors.Is(err, repo.ErrNotFound) {
+		t.Fatalf("UpdateRole() for nonexistent: expected: %v", repo.ErrNotFound)
+	}
+}
