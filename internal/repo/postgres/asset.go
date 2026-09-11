@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/PzKpfw-ausf-H/forgevault/internal/domain"
 	"github.com/PzKpfw-ausf-H/forgevault/internal/repo"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,13 +30,23 @@ func (r *AssetRepository) Create(ctx context.Context, asset domain.Asset) error 
 
 	defer tx.Rollback(ctx)
 
-	tx.Exec(ctx,
+	_, err = tx.Exec(ctx,
 		`INSERT INTO assets (id, title, description, author_name, uploaded_by, type,
 		processing_status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 		asset.ID, asset.Title, asset.Description, asset.AuthorName, asset.UploadedBy,
 		asset.Type, asset.ProcessingStatus, asset.CreatedAt, asset.UpdatedAt,
 	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				return fmt.Errorf("postgres asset: insert tx: %w", repo.ErrAlreadyExists)
+			}
+		}
+		return fmt.Errorf("postgres asset: create: insert assets tx: %w", err)
+	}
 
 	batch := &pgx.Batch{}
 
@@ -49,7 +61,7 @@ func (r *AssetRepository) Create(ctx context.Context, asset domain.Asset) error 
 
 	br := tx.SendBatch(ctx, batch)
 
-	for i := 0; i <= len(asset.Tags); i++ {
+	for i := 0; i < len(asset.Tags); i++ {
 		_, err := br.Exec()
 		if err != nil {
 			br.Close()
@@ -81,6 +93,10 @@ func (r *AssetRepository) GetByID(ctx context.Context, assetID domain.AssetID) (
 
 	if err := row.Scan(&a.ID, &a.Title, &a.Description, &a.AuthorName, &a.UploadedBy, &a.Type, &a.ProcessingStatus,
 		&a.CreatedAt, &a.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Asset{}, fmt.Errorf("postgres asset: get by id asset: %w", repo.ErrNotFound)
+		}
+
 		return domain.Asset{}, fmt.Errorf("postgres asset: get by id asset: %w", err)
 	}
 
@@ -123,24 +139,34 @@ func (r *AssetRepository) Update(ctx context.Context, asset domain.Asset) error 
 		return fmt.Errorf("postgres asset: update: begin tx: %w", err)
 	}
 
-	tx.Exec(ctx,
+	defer tx.Rollback(ctx)
+
+	cmd, err := tx.Exec(ctx,
 		`UPDATE assets
 		SET title = $1,
 		description = $2,
 		author_name = $3,
-		uploaded_by = $4,
-		type = $5,
-		processing_status = $6,
-		created_at = $7,
-		updated_at = $8
-		WHERE id = $9`,
-		asset.Title, asset.Description, asset.AuthorName, asset.UploadedBy, asset.Type,
-		asset.ProcessingStatus, asset.CreatedAt, asset.UpdatedAt, asset.ID)
+		type = $4,
+		processing_status = $5,
+		updated_at = $6
+		WHERE id = $7`,
+		asset.Title, asset.Description, asset.AuthorName, asset.Type,
+		asset.ProcessingStatus, asset.UpdatedAt, asset.ID)
+	if err != nil {
+		return fmt.Errorf("postgres asset: update: update assets tx: %w", err)
+	}
 
-	tx.Exec(ctx,
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("postgres asset: update: %w", repo.ErrNotFound)
+	}
+
+	_, err = tx.Exec(ctx,
 		`DELETE FROM asset_tags
 		WHERE asset_id = $1`,
 		asset.ID)
+	if err != nil {
+		return fmt.Errorf("postgres asset: update: delete asset tags tx: %w", err)
+	}
 
 	batch := &pgx.Batch{}
 
@@ -155,7 +181,7 @@ func (r *AssetRepository) Update(ctx context.Context, asset domain.Asset) error 
 
 	br := tx.SendBatch(ctx, batch)
 
-	for i := 0; i <= len(asset.Tags); i++ {
+	for i := 0; i < len(asset.Tags); i++ {
 		_, err := br.Exec()
 		if err != nil {
 			br.Close()
@@ -258,8 +284,8 @@ func (r *AssetRepository) List(ctx context.Context, params repo.AssetListParams)
 	for rows.Next() {
 		var a domain.Asset
 
-		if err := rows.Scan(a.ID, a.Title, a.Description, a.AuthorName, a.UploadedBy, a.Type,
-			a.ProcessingStatus, a.CreatedAt, a.UpdatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.Title, &a.Description, &a.AuthorName, &a.UploadedBy, &a.Type,
+			&a.ProcessingStatus, &a.CreatedAt, &a.UpdatedAt); err != nil {
 			return repo.AssetListResult{}, fmt.Errorf("postgres asset: list: scan asset: %w", err)
 		}
 
@@ -277,7 +303,7 @@ func (r *AssetRepository) List(ctx context.Context, params repo.AssetListParams)
 		}, nil
 	}
 
-	ids := make([]string, 0)
+	ids := make([]string, 0, len(assets))
 	for _, a := range assets {
 		ids = append(ids, string(a.ID))
 	}
