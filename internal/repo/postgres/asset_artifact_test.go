@@ -12,12 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func validAssetArtifact() domain.AssetArtifact {
+func validAssetArtifact(assetID domain.AssetID) domain.AssetArtifact {
 	now := time.Now().UTC().Truncate(time.Microsecond)
 
 	return domain.AssetArtifact{
 		ID:         domain.AssetArtifactID(uuid.NewString()),
-		AssetID:    domain.AssetID(uuid.NewString()),
+		AssetID:    assetID,
 		Type:       domain.ArtifactTypePreviewImage,
 		MimeType:   "image/png",
 		Size:       15,
@@ -49,6 +49,42 @@ func createTestAsset(t *testing.T, pool *pgxpool.Pool) domain.Asset {
 	return asset
 }
 
+func assertArtifactEqual(t *testing.T, got, want domain.AssetArtifact) {
+	t.Helper()
+
+	if got.ID != want.ID {
+		t.Errorf("want id %q but got %q", want.ID, got.ID)
+	}
+
+	if got.AssetID != want.AssetID {
+		t.Errorf("want asset id %q but got %q", want.AssetID, got.AssetID)
+	}
+
+	if got.Type != want.Type {
+		t.Errorf("want type %q but got %q", want.Type, got.Type)
+	}
+
+	if got.MimeType != want.MimeType {
+		t.Errorf("want mime type %q but got %q", want.MimeType, got.MimeType)
+	}
+
+	if got.Size != want.Size {
+		t.Errorf("want size %d but got %d", want.Size, got.Size)
+	}
+
+	if got.Checksum != want.Checksum {
+		t.Errorf("want checksum %q but got %q", want.Checksum, got.Checksum)
+	}
+
+	if got.StorageKey != want.StorageKey {
+		t.Errorf("want storage key %q but got %q", want.StorageKey, got.StorageKey)
+	}
+
+	if !got.CreatedAt.Equal(want.CreatedAt) {
+		t.Errorf("want created at %q but got %q", want.CreatedAt, got.CreatedAt)
+	}
+}
+
 func TestAssetArtifact_CreateAndGetByID(t *testing.T) {
 	db := openTestDB(t)
 	cleanTestDB(t, db)
@@ -57,8 +93,7 @@ func TestAssetArtifact_CreateAndGetByID(t *testing.T) {
 	ctx := context.Background()
 
 	artifactRepo := NewAssetArtifactRepository(db)
-	want := validAssetArtifact()
-	want.AssetID = asset.ID
+	want := validAssetArtifact(asset.ID)
 	if err := artifactRepo.Create(ctx, want); err != nil {
 		t.Fatalf("Create() asset artifact: %v", err)
 	}
@@ -68,77 +103,99 @@ func TestAssetArtifact_CreateAndGetByID(t *testing.T) {
 		t.Fatalf("GetByID() asset artifact: %v", err)
 	}
 
-	if got.ID != want.ID {
-		t.Fatalf("want id %q but got %q", want.ID, got.ID)
-	}
-
-	if got.AssetID != want.AssetID {
-		t.Fatalf("want asset id %q but got %q", want.AssetID, got.AssetID)
-	}
-
-	if got.Type != want.Type {
-		t.Fatalf("want type %q but got %q", want.Type, got.Type)
-	}
-
-	if got.MimeType != want.MimeType {
-		t.Fatalf("want mime type %q but got %q", want.MimeType, got.MimeType)
-	}
-
-	if got.Size != want.Size {
-		t.Fatalf("want size %d but got %d", want.Size, got.Size)
-	}
-
-	if got.Checksum != want.Checksum {
-		t.Fatalf("want checksum %q but got %q", want.Checksum, got.Checksum)
-	}
-
-	if got.StorageKey != want.StorageKey {
-		t.Fatalf("want storage key %q but got %q", want.StorageKey, got.StorageKey)
-	}
-
-	if !got.CreatedAt.Equal(want.CreatedAt) {
-		t.Fatalf("want created at %q but got %q", want.CreatedAt, got.CreatedAt)
-	}
+	assertArtifactEqual(t, got, want)
 }
 
 func TestAssetArtifact_ListByAssetID(t *testing.T) {
 	db := openTestDB(t)
 	cleanTestDB(t, db)
 
-	asset := createTestAsset(t, db)
+	baseTime := time.Now().UTC().Truncate(time.Microsecond)
 
 	ctx := context.Background()
 
+	// Creating assets
+	userRepo := NewUserRepository(db)
+	assetRepo := NewAssetRepository(db)
+
+	user := validUser()
+	if err := userRepo.Create(ctx, user); err != nil {
+		t.Fatalf("create test user: %v", err)
+	}
+
+	asset := validAsset()
+	asset.UploadedBy = user.ID
+	if err := assetRepo.Create(ctx, asset); err != nil {
+		t.Fatalf("create test asset: %v", err)
+	}
+
+	asset2 := validAsset()
+	asset2.UploadedBy = user.ID
+	if err := assetRepo.Create(ctx, asset2); err != nil {
+		t.Fatalf("create test asset: %v", err)
+	}
+	// End of creating assets
+
+	// Creating asset artifacts
 	artifactRepo := NewAssetArtifactRepository(db)
 
-	art1 := validAssetArtifact()
-	art2 := validAssetArtifact()
-	art3 := validAssetArtifact()
+	art1 := validAssetArtifact(asset.ID)
+	art1.CreatedAt = baseTime
 
-	art1.AssetID = asset.ID
+	art2 := validAssetArtifact(asset.ID)
+	art2.CreatedAt = baseTime.Add(time.Second)
+
+	art3 := validAssetArtifact(asset.ID)
+	art3.CreatedAt = baseTime.Add(2 * time.Second)
+
+	art4 := validAssetArtifact(asset2.ID)
+
 	if err := artifactRepo.Create(ctx, art1); err != nil {
 		t.Fatalf("Create() artifact1 error: %v", err)
 	}
 
-	art2.AssetID = asset.ID
 	if err := artifactRepo.Create(ctx, art2); err != nil {
 		t.Fatalf("Create() artifact2 error: %v", err)
 	}
 
-	art3.AssetID = asset.ID
 	if err := artifactRepo.Create(ctx, art3); err != nil {
 		t.Fatalf("Create() artifact3 error: %v", err)
 	}
 
-	artifacts, err := artifactRepo.ListByAssetID(ctx, asset.ID)
+	if err := artifactRepo.Create(ctx, art4); err != nil {
+		t.Fatalf("Create() artifact4 error: %v", err)
+	}
+
+	// End of creating asset artifacts
+
+	want1 := []domain.AssetArtifact{
+		art1, art2, art3,
+	}
+	want2 := []domain.AssetArtifact{art4}
+
+	got1, err := artifactRepo.ListByAssetID(ctx, asset.ID)
 	if err != nil {
-		t.Fatalf("ListByAssetID() error: %v", err)
+		t.Fatalf("ListByAssetID() got1 error: %v", err)
 	}
 
-	if len(artifacts) != 3 {
-		t.Fatalf("expected len 3 but got %d", len(artifacts))
+	if len(got1) != 3 {
+		t.Fatalf("got1: expected len 3 but got %d", len(got1))
 	}
 
+	for i := range got1 {
+		assertArtifactEqual(t, got1[i], want1[i])
+	}
+
+	got2, err := artifactRepo.ListByAssetID(ctx, asset2.ID)
+	if err != nil {
+		t.Fatalf("ListByAssetID() got2 error: %v", err)
+	}
+
+	if len(got2) != 1 {
+		t.Fatalf("got2: expected len 1 but got %d", len(got2))
+	}
+
+	assertArtifactEqual(t, got2[0], want2[0])
 }
 
 func TestAssetArtifact_Delete(t *testing.T) {
@@ -151,8 +208,7 @@ func TestAssetArtifact_Delete(t *testing.T) {
 
 	artifactRepo := NewAssetArtifactRepository(db)
 
-	art := validAssetArtifact()
-	art.AssetID = asset.ID
+	art := validAssetArtifact(asset.ID)
 
 	if err := artifactRepo.Create(ctx, art); err != nil {
 		t.Fatalf("Create() artifact1 error: %v", err)
@@ -179,5 +235,20 @@ func TestAssetArtifact_GetByID_NotFound(t *testing.T) {
 	_, err := artifactRepo.GetByID(ctx, domain.AssetArtifactID(uuid.NewString()))
 	if !errors.Is(err, repo.ErrNotFound) {
 		t.Fatalf("GetByID() not found: expected ErrNotFound but got: %v", err)
+	}
+}
+
+func TestAssetArtifact_Delete_NotFound(t *testing.T) {
+	db := openTestDB(t)
+	cleanTestDB(t, db)
+
+	ctx := context.Background()
+
+	artifactRepo := NewAssetArtifactRepository(db)
+
+	err := artifactRepo.Delete(ctx, "99999999-9999-9999-9999-999999999999")
+
+	if !errors.Is(err, repo.ErrNotFound) {
+		t.Fatalf("Delete() not found: expected ErrNotFound but got: %v", err)
 	}
 }
