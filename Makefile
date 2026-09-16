@@ -20,3 +20,15 @@ migrate-down:
 	goose down
 migrate-show:
 	goose -dir migrations status
+
+test-migrate-up:
+	GOOSE_DBSTRING="$(TEST_DATABASE_URL)" goose up
+
+test-migrate-down:
+	GOOSE_DBSTRING="$(TEST_DATABASE_URL)" goose down
+
+test-migrate-show:
+	GOOSE_DBSTRING="$(TEST_DATABASE_URL)" goose -dir migrations status
+
+test-repo:
+	go test ./internal/repo/postgres -v

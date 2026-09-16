@@ -14,15 +14,16 @@ import (
 
 func validAssetArtifact(assetID domain.AssetID) domain.AssetArtifact {
 	now := time.Now().UTC().Truncate(time.Microsecond)
+	id := domain.AssetArtifactID(uuid.NewString())
 
 	return domain.AssetArtifact{
-		ID:         domain.AssetArtifactID(uuid.NewString()),
+		ID:         id,
 		AssetID:    assetID,
 		Type:       domain.ArtifactTypePreviewImage,
 		MimeType:   "image/png",
 		Size:       15,
 		Checksum:   "something_not_empty",
-		StorageKey: "path/to/file",
+		StorageKey: "artifacts/" + string(id),
 		CreatedAt:  now,
 	}
 }

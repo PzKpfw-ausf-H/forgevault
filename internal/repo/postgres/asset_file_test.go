@@ -17,9 +17,10 @@ func ptr[T any](v T) *T {
 
 func validMainAssetFile(assetID domain.AssetID) domain.AssetFile {
 	now := time.Now().UTC().Truncate(time.Microsecond)
+	id := domain.AssetFileID(uuid.NewString())
 
 	return domain.AssetFile{
-		ID:           domain.AssetFileID(uuid.NewString()),
+		ID:           id,
 		AssetID:      assetID,
 		Role:         domain.FileRoleMain,
 		TextureType:  nil,
@@ -27,7 +28,7 @@ func validMainAssetFile(assetID domain.AssetID) domain.AssetFile {
 		MimeType:     "application/json",
 		Extension:    ".blend",
 		Size:         160,
-		StorageKey:   "path/to/file",
+		StorageKey:   "files/" + string(id),
 		Checksum:     "not empty",
 		CreatedAt:    now,
 	}
