@@ -32,3 +32,6 @@ test-migrate-show:
 
 test-repo:
 	go test ./internal/repo/postgres -v
+
+test-storage:
+	go test ./internal/storage/minio -v
